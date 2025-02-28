@@ -59,7 +59,7 @@ server.listen(8800, () => {
   export { io };
 
 app.use(cors({
-    origin: 'http://localhost:3000', // Your React app URL
+    origin: 'https://websoket-test-with-backend-api.onrender.com/', // Your React app URL
     credentials: true, // Allow cookies to be sent
   }));
   
