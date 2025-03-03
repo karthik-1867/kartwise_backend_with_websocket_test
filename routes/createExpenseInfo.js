@@ -6,6 +6,7 @@ import Users from "../models/Users.js";
 import CreateExpenseGroup from "../models/CreateExpenseFroup.js"
 import { createError } from "../error.js";
 import Notification from "../models/Notification.js";
+import { io } from "../index.js";
 
 const router = express.Router();
 
@@ -68,6 +69,7 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
             $inc:{contributed:val,paidBack:0,urShare:ownerPaidBack}
         })
 
+        io.emit("expenseUpdated", "created");
         res.status(200).json(result);
     }catch(e){
 
@@ -249,6 +251,7 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
 
         await currentInfoStatus.save();
 
+        io.emit("expenseUpdated", "created");
         res.status(200).json(currentInfoStatus);
     }catch(e){
         res.status(401).json(e.message)
@@ -275,6 +278,7 @@ router.delete("/deleteExpenseDetails/:id",verifyToken,async(req,res,next)=>{
         );
     
         await createExpenseInfo.findByIdAndDelete(req.params.id)
+        io.emit("expenseUpdated", "created");
         res.status(200).json("deleted")
     }catch(e){
         res.status(403).json(e.message)
