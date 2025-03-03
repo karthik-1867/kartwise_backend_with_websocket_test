@@ -25,7 +25,7 @@ const app = express();
 const server = http.createServer(app); // Create HTTP server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000", // React app URL
+    origin: "https://kartwise-app-api-integration.onrender.com", // React app URL
     credentials: true, // Allow cookies to be sent
   },
 });
@@ -59,7 +59,7 @@ server.listen(8800, () => {
   export { io };
 
 app.use(cors({
-    origin: 'http://localhost:3000', // Your React app URL
+    origin: 'https://kartwise-app-api-integration.onrender.com', // Your React app URL
     credentials: true, // Allow cookies to be sent
   }));
   
