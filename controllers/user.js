@@ -1,6 +1,7 @@
 import { createError } from "../error.js";
 import Notification from "../models/Notification.js";
 import Users from "../models/Users.js";
+import { io } from "../index.js";
 
 export const getAllUser = async(req,res) =>{
 
@@ -29,6 +30,7 @@ export const inviteRequest = async(req,res,next)=>{
 
            await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteRequest:req.user.id},$push:{Notifications:notification.id}});
            const currentUpdate = await Users.findByIdAndUpdate(req.user.id,{$addToSet:{PendingInviteRequest:req.params.id}},{new:true});
+           io.emit("expenseUpdated", "created");
            res.status(200).json(currentUpdate);
 
         }catch(e){
@@ -59,7 +61,7 @@ export const acceptInvite = async(req,res,next) => {
             console.log("before save")
             console.log(user);
             user.save();
-
+            io.emit("expenseUpdated", "created");
             res.status(200).json(user);
         }catch(e){
             res.status(404).json("failure");
@@ -74,6 +76,7 @@ export const rejectPendingInvite = async(req,res,next)=>{
     try{
         const user = await Users.findByIdAndUpdate(req.user.id,{$pull:{PendingInviteRequest:req.params.id}},{new:true});
         await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteRequest:req.user.id}})
+        io.emit("expenseUpdated", "created");
         res.status(200).json(user);
     }catch(e){
        res.status(401).json(e.message);
@@ -88,6 +91,7 @@ export const removeInvite = async(req,res,next) => {
             await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteAcceptedUsers:req.user.id}})
             user.inviteAcceptedUsers.pull(req.params.id);
             user.save()
+            io.emit("expenseUpdated", "created");
             res.status(200).json(user)
         }else{
             res.status(401).json("no such users")
@@ -107,7 +111,8 @@ export const removeInviteRequest = async(req,res,next) => {
         const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id})
         await notification.save()
        await Users.findByIdAndUpdate(req.params.id,{$push:{Notifications:notification.id},$pull:{PendingInviteRequest:req.user.id}})
-        res.status(200).json(user);
+       io.emit("expenseUpdated", "created"); 
+       res.status(200).json(user);
     }catch(e){
        res.status(401).json(e.message);
     }
