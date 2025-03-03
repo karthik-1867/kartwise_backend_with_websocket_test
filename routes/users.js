@@ -1,5 +1,5 @@
 import express from "express"
-import { acceptInvite, getAllUser, inviteRequest, removeInvite, removeInviteRequest } from "../controllers/user.js";
+import { acceptInvite, getAllUser, inviteRequest, rejectPendingInvite, removeInvite, removeInviteRequest } from "../controllers/user.js";
 import { signin, signup } from "../controllers/auth.js";
 import { verifyToken } from "../verifiyToken.js";
 import Users from "../models/Users.js";
@@ -20,6 +20,8 @@ router.post("/removeInvitedUser/:id",verifyToken,removeInvite)
 
 router.post("/removeInviteRequest/:id",verifyToken,removeInviteRequest)
 
+router.post("/rejectPendingInvite/:id",verifyToken,rejectPendingInvite)
+rejectPendingInvite
 router.get("/getUser/:id",async(req,res,next)=>{
     try{
 

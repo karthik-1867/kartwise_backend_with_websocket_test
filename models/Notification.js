@@ -9,6 +9,18 @@ const NotificationSchema = new mongoose.Schema({
         type:String,
         default:""
     },
+    groupName:{
+        type:String,
+        default:""
+    },
+    ExpenseName:{
+        type:String,
+        default:""
+    },
+    ExpenseOwner:{
+       type:String,
+       default:""
+    },
     senderId:{
         type:String,
         default:""

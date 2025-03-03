@@ -1,21 +1,19 @@
 import express from "express"
 
-
 import { verifyToken } from "../verifiyToken.js";
 import createExpenseInfo from "../models/createExpenseInfo.js";
 import Users from "../models/Users.js";
 import CreateExpenseGroup from "../models/CreateExpenseFroup.js"
 import { createError } from "../error.js";
 import Notification from "../models/Notification.js";
-import { io } from "../index.js";
+
 const router = express.Router();
 
 
 router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
    
     try{
-
-
+        console.log(req.body)
         const expensegroup = await CreateExpenseGroup.findById(req.body.expenseGroupId);
         console.log("expenseGroup")
         console.log(expensegroup)
@@ -23,32 +21,36 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
         
         const ownerDetail = await Users.findOne({name:req.body.owner});
         const userDetail = await Users.findById(req.user.id);
+        console.log(ownerDetail)
+        console.log(userDetail)
         req.body.users = req.body.users.map((i)=>(
             i.id == ownerDetail.id ? {... i, "paidBack": i.expense,"owner":true,"status":"paid"} : {... i, "paidBack":0,"owner":false,"status":"pending"}
         ))
 
         req.body.users = req.body.users.filter((i)=>i.expense>0 || i.owner == true);
 
-        if(req.body.users.length <= 1) return next(createError(401,"Please add expense"))
+        if(req.body.users.length == 0) return next(createError(401,"Please add expense"))
         
         req.body.users = req.body.users.filter(i=>expensegroup.members.includes(i.id))
         console.log("final")
         console.log(req.body.users)
-        const val = (req.body.users.reduce((acc,cur)=>(acc+Number(cur.expense)),0))-(req.body.users.filter((i)=>i.owner==true)[0].expense)
+        console.log("before error")
+        const val = (req.body.users.reduce((acc,cur)=>(acc+Number(cur.expense)),0))
+        console.log("passed")
         const ownerPaidBack = req.body.users.filter((i)=>i.owner==true)[0].expense
 
         console.log("total")
         console.log(val);
-        req.body = {...req.body,"paid":val,"ownerReceived":0,"ownerId":ownerDetail.id}
+        req.body = {...req.body,"paid":val,"ownerReceived":ownerPaidBack,"ownerId":ownerDetail.id}
 
         console.log("owner id")
         console.log(ownerDetail.id);
 
         const expense = new createExpenseInfo(req.body);
-        expense.save();
+        await expense.save();
 
         const groupId = req.body.users.map((i)=>i.id)
-        const notification = new Notification({"type":"message","message":`${userDetail.name} has created group ${req.body.groupName}. ${ownerDetail.name} will be the owner of group. Amount of ${val+ownerPaidBack}rs has been contributed by ${ownerDetail.name} of which his part of ${ownerPaidBack} is deducted. Remaining ${val}rs needs to be paid to ${ownerDetail.name}`})
+        const notification = new Notification({"type":"message","groupName":`${expensegroup.title}`,"ExpenseName":`${req.body.groupName}`,"ExpenseOwner":`${ownerDetail.name}`,"message":`${userDetail.name} has created group ${req.body.groupName}. ${ownerDetail.name} will be the owner of group. Amount of ${val}rs has been contributed by ${ownerDetail.name} of which his part of ${ownerPaidBack} is deducted. Remaining ${val-ownerPaidBack}rs needs to be paid to ${ownerDetail.name}`})
 
         await notification.save()
 
@@ -57,19 +59,22 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
         const result = await Users.updateMany(
             { _id: { $in: [...groupId] } }, // Match users with the given userIds
             { $push: {createExpenseInfo:expense.id,Notifications:notification.id},
-              $inc:{expenditure:val}
-            } // Apply the update
+              $inc:{expenditure:val,recoveredExpenditure:ownerPaidBack}
+            } // Apply theupdate
         );
 
         
         await Users.findByIdAndUpdate(ownerDetail.id,{
-            $inc:{contributed:val,paidBack:ownerPaidBack}
+            $inc:{contributed:val,paidBack:0,urShare:ownerPaidBack}
         })
-        
-        io.emit("expenseUpdated", "created");
+
         res.status(200).json(result);
     }catch(e){
-        res.status(404).json(e.message)
+
+        if(e.message.includes("Cast to ObjectId failed for value")) next(createError(401,"Please select group"))
+        if(e.message.includes("duplicate key error")) next(createError(403,"This expense already exist"))
+        next(createError(401,e.message))
+           
     }
 })
 
@@ -78,11 +83,9 @@ router.get("/getExpenseDetails/:id",verifyToken,async(req,res,next)=>{
     try{
 
         const groupDetail = await createExpenseInfo.findById(req.params.id)
-        // console.log("gdghfhfhfrtyrykugtjhguytiuyluih")
         res.status(200).json(groupDetail);
-        
     }catch(e){
-        res.status(401).json(e.response);
+        res.status(401).json(e);
     }
 })
 
@@ -108,7 +111,7 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
         if(req.body.users.length == 0) return res.status(200).json("No settlements. Please add up paidback money and proceed"); 
         const val = req.body.users.reduce((acc,cur)=>(acc+cur.paidBack),0);
 
-        if(currentInfoStatus.ownerId !== req.user.id) return next(createError(403,"Only one who paid for the group can update this"));
+        if(currentInfoStatus.ownerId !== req.user.id) return next(createError(403,`Only expense group owner can update this.That is ${currentInfoStatus.owner}`));
         let inputUserDetail = ""
         let errorMessage = [];
         for (let current_input of req.body.users){
@@ -147,9 +150,9 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
                    let userDetail = await Users.findById(users.id);
                    let notification = ""
                    if(current_input.paidBack+users.paidBack<current_input.expense){
-                   notification = new Notification({"type":"message","message":`${currentInfoStatus.groupName} Group Notification : ${userDetail.name} has paid back ${current_input.paidBack+users.paidBack}rs to ${currentInfoStatus.owner}. Pending amount : ${current_input.expense-(current_input.paidBack+users.paidBack)}rs to be paid`})
+                   notification = new Notification({"type":"message","ExpenseName":`${currentInfoStatus.groupName}`,"ExpenseOwner":`${ownerDetail.name}`,"message":`${currentInfoStatus.groupName} Group Notification : ${userDetail.name} has paid back ${current_input.paidBack+users.paidBack}rs to ${currentInfoStatus.owner}. Pending amount : ${current_input.expense-(current_input.paidBack+users.paidBack)}rs to be paid`})
                    }else{
-                    notification = new Notification({"type":"message","message":`${currentInfoStatus.groupName} Group Notification : ${userDetail.name} has settled up ${current_input.paidBack+users.paidBack}rs to ${currentInfoStatus.owner}.`})
+                    notification = new Notification({"type":"message","ExpenseName":`${currentInfoStatus.groupName}`,"ExpenseOwner":`${ownerDetail.name}`,"message":`${currentInfoStatus.groupName} Group Notification : ${userDetail.name} has settled up ${current_input.paidBack+users.paidBack}rs to ${currentInfoStatus.owner}.`})
                    }
                    await notification.save();
                    await Users.updateMany(
@@ -165,7 +168,12 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
             req.body.users = req.body.users.map((user) => {
                 if (current_input.id === user.id) {
                   
-                  if (current_input.paidBack + user.paidBack === current_input.expense) {
+                  console.log("curent input")
+                  console.log(current_input.paidBack + user.paidBack)
+                  console.log(current_input.expense)
+                  current_input.paidBack + user.paidBack === current_input.expense
+                  console.log(current_input.paidBack + user.paidBack == current_input.expense)
+                  if (current_input.paidBack + user.paidBack == current_input.expense) {
                     return { ...user, status: "paid" };
                   }
 
@@ -240,15 +248,7 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
 
 
         await currentInfoStatus.save();
-        try {
-            io.emit("expenseUpdated", currentInfoStatus);
-            console.log("Expense update event emitted.");
-          } catch (error) {
-            console.error("Error emitting expenseUpdated event:", error);
-          }
 
-
-        io.emit("expenseUpdated", "created");
         res.status(200).json(currentInfoStatus);
     }catch(e){
         res.status(401).json(e.message)
@@ -263,24 +263,35 @@ router.delete("/deleteExpenseDetails/:id",verifyToken,async(req,res,next)=>{
         if(expense.ownerId!=req.user.id) return next(createError(403,`Only group owner that is ${expense.owner} can delete this expense`))
 
         const expenseMembers = expense.users.map((i)=>i.id);
-        const notification = new Notification({"type":"message","message":`${expense.owner} has deleted group ${expense.groupName}`})
+        const notification = new Notification({"type":"message","ExpenseName":`${expense.groupName}`,"ExpenseOwner":`${expense.owner}`,"message":`${expense.owner} has deleted group ${expense.groupName}`})
     
         await notification.save()
         await Users.updateMany(
             { _id: { $in: [...expenseMembers] } }, 
             { $pull: {createExpenseInfo:req.params.id},
-              $set :{expenditure:0,recoveredExpenditure:0,paidBack:0,recived:0,contributed:0},
+              $set :{expenditure:0,recoveredExpenditure:0,paidBack:0,recived:0,contributed:0,urShare:0},
               $push:{Notifications:notification.id}
             }
         );
     
         await createExpenseInfo.findByIdAndDelete(req.params.id)
-        io.emit("expenseUpdated", "created");
         res.status(200).json("deleted")
     }catch(e){
         res.status(403).json(e.message)
     }
 
+})
+
+
+router.post("/memberDetails",verifyToken,async(req,res,next)=>{
+
+    try{
+        console.log(req.body.members)
+        const member = await Users.find({_id: { $in: req.body.members} })
+        res.status(200).json(member)
+    }catch(e){
+        res.status(401).json(e)
+    }
 })
 
 

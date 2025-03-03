@@ -17,6 +17,10 @@ const UserSchema = new mongoose.Schema({
     profilePicture:{
         type:String
     },
+    PendingInviteRequest:{
+        type:Array,
+        default:[]
+    },
     inviteRequest:{
         type:Array,
         default:[]
@@ -50,6 +54,10 @@ const UserSchema = new mongoose.Schema({
         default:0
     },
     paidBack:{
+        type:Number,
+        default:0
+    },
+    urShare:{
         type:Number,
         default:0
     },

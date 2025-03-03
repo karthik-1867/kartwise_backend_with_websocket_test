@@ -6,7 +6,7 @@ import { createError } from "../error.js";
 const router = express.Router();
 import Notification from "../models/Notification.js";
 
-router.post("/createGroup",verifyToken,async(req,res)=>{
+router.post("/createGroup",verifyToken,async(req,res,next)=>{
     
     try{
         const users = await Users.findById(req.user.id)
@@ -28,11 +28,11 @@ router.post("/createGroup",verifyToken,async(req,res)=>{
             { $push: {createExpenseGroup:group.id,Notifications:notification.id},} // Apply the update
           )
 
-
-        console.log("final result")
-          res.status(200).json(result);
+        
+          res.status(200).json("ok");
     }catch(e){
-        res.status(401).json(e.message);
+        if(e.message.includes("duplicate key error")) next(createError(403,"This Group already exist"))
+        next(createError(401,"something went wrong"))
     }
    
 })

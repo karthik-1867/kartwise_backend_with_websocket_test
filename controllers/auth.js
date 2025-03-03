@@ -1,4 +1,3 @@
-import { trusted } from "mongoose";
 import { createError } from "../error.js";
 import Users from "../models/Users.js";
 import bcrypt from "bcryptjs";
@@ -23,7 +22,6 @@ export const signup = async(req,res)=>{
 
 export const signin = async(req,res,next) => {
     try{
-      console.log("req",req.body)
        const user = await Users.findOne({email:req.body.email});
 
        if(!user) return next(createError(404,"user not found"))
