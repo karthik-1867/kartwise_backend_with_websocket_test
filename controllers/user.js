@@ -31,8 +31,8 @@ export const inviteRequest = async(req,res,next)=>{
            await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteRequest:req.user.id},$push:{Notifications:notification.id}});
           
 
+           io.emit("expenseUpdated", "created");
            res.status(200).json(notification);
-
 
 
         }catch(e){
@@ -62,7 +62,7 @@ export const acceptInvite = async(req,res,next) => {
             console.log("before save")
             console.log(user);
             user.save();
-
+            io.emit("expenseUpdated", "created");
             res.status(200).json("success");
         }catch(e){
             res.status(404).json("failure");
@@ -81,8 +81,10 @@ export const removeInvite = async(req,res,next) => {
             await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteAcceptedUsers:req.user.id}})
             user.inviteAcceptedUsers.pull(req.params.id);
             user.save()
+            io.emit("expenseUpdated", "created");
             res.status(200).json("removed user")
         }else{
+            
             res.status(401).json("no such users")
         }
     }catch(e){
@@ -102,7 +104,7 @@ export const removeInviteRequest = async(req,res,next) => {
         await notification.save()
 
         const receiver = await Users.findByIdAndUpdate(req.params.id,{$push:{Notifications:notification.id}})
-
+        io.emit("expenseUpdated", "created");
         res.status(200).json(user);
     }catch(e){
        res.status(401).json(e.message);

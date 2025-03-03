@@ -78,7 +78,6 @@ router.get("/getExpenseDetails/:id",verifyToken,async(req,res,next)=>{
     try{
 
         const groupDetail = await createExpenseInfo.findById(req.params.id)
-        io.emit("expenseUpdated", "created");
         // console.log("gdghfhfhfrtyrykugtjhguytiuyluih")
         res.status(200).json(groupDetail);
         
@@ -248,6 +247,8 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
             console.error("Error emitting expenseUpdated event:", error);
           }
 
+
+        io.emit("expenseUpdated", "created");
         res.status(200).json(currentInfoStatus);
     }catch(e){
         res.status(401).json(e.message)
