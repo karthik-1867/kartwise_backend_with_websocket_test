@@ -21,7 +21,7 @@ export const inviteRequest = async(req,res,next)=>{
      if(req.user.id !== req.params.id){
         try{
            
-           const getUser = Users.findById(req.user.id)
+           const getUser = await Users.findById(req.user.id)
 
            const notification = new Notification({"type":"Invite","message":`${getUser.name} has sent u request`,"senderId":req.user.id})
 
