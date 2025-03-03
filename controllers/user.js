@@ -23,7 +23,7 @@ export const inviteRequest = async(req,res,next)=>{
            
            const getUser = Users.findById(req.user,id)
 
-           const notification = new Notification({"type":"Invite","Message":`${getUser.name} has sent u request`,"senderId":req.user.id})
+           const notification = new Notification({"type":"Invite","message":`${getUser.name} has sent u request`,"senderId":req.user.id})
 
            await notification.save()
 
