@@ -21,8 +21,9 @@ export const inviteRequest = async(req,res,next)=>{
      if(req.user.id !== req.params.id){
         try{
            
+           const getUser = Users.findById(req.user,id)
 
-           const notification = new Notification({"type":"Invite","Message":"","senderId":req.user.id})
+           const notification = new Notification({"type":"Invite","Message":`${getUser.name} has sent u request`,"senderId":req.user.id})
 
            await notification.save()
 
@@ -88,7 +89,11 @@ export const removeInvite = async(req,res,next) => {
 
     try{
         if(user.inviteAcceptedUsers.includes(req.params.id)){
-            await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteAcceptedUsers:req.user.id}})
+          
+            const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id})
+
+            await notification.save()
+            await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteAcceptedUsers:req.user.id},$push:{Notifications:notification.id}})
             user.inviteAcceptedUsers.pull(req.params.id);
             user.save()
             io.emit("expenseUpdated", "created");
