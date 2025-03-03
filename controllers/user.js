@@ -1,7 +1,7 @@
 import { createError } from "../error.js";
 import Notification from "../models/Notification.js";
 import Users from "../models/Users.js";
-
+import { io } from "../index.js";
 
 export const getAllUser = async(req,res) =>{
 
