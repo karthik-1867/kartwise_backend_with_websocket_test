@@ -25,7 +25,7 @@ const app = express();
 const server = http.createServer(app); // Create HTTP server
 const io = new Server(server, {
   cors: {
-    origin: "https://websoket-test-with-backend-api.onrender.com", // React app URL
+    origin: "http://localhost:3000", // React app URL
     credentials: true, // Allow cookies to be sent
   },
 });
