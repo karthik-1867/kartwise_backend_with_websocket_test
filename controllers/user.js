@@ -46,22 +46,26 @@ export const acceptInvite = async(req,res,next) => {
 
     const user = await Users.findById(req.user.id);
 
-    if(user.inviteRequest.includes(req.params.id) || user.inviteAcceptedUsers.includes(req.params.id))
+    if(user.inviteRequest.includes(req.params.id) || !user.inviteAcceptedUsers.includes(req.params.id))
     {
 
         try{
-            const notification = new Notification({"type":"Message","message":`${user.name} accepted your request`,"senderId":req.user.id})
 
-            await notification.save()
-            const receiver = await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteAcceptedUsers:req.user.id},$push:{Notifications:notification.id},$pull:{PendingInviteRequest:req.user.id}})
-            
             user.inviteAcceptedUsers.push(req.params.id);
             user.inviteRequest.pull(req.params.id);
             user.PendingInviteRequest.pull(req.params.id);
 
             console.log("before save")
             console.log(user);
-            user.save();
+            await user.save();
+
+            console.log("after notification",user)
+
+            const notification = new Notification({"type":"Message","message":`${user.name} accepted your request`,"senderId":req.user.id})
+
+            await notification.save()
+            const receiver = await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteAcceptedUsers:req.user.id},$push:{Notifications:notification.id},$pull:{PendingInviteRequest:req.user.id}})
+            
             io.emit("expenseUpdated", "created");
             res.status(200).json(user);
         }catch(e){
@@ -97,7 +101,7 @@ export const removeInvite = async(req,res,next) => {
             user.inviteAcceptedUsers.pull(req.params.id);
             user.save()
             io.emit("expenseUpdated", "created");
-            res.status(200).json(user)
+            res.status(200).json("removed user")
         }else{
             res.status(401).json("no such users")
         }

@@ -64,6 +64,14 @@ const UserSchema = new mongoose.Schema({
     Notifications:{
         type:Array,
         default:[]
+    },   
+    Acknowledge:{
+        type:Array,
+        default:[]
+    },
+    AcknowledgeMessageStatus:{
+       type:Array,
+       default:[]
     }
 },{timestamps:true})
 

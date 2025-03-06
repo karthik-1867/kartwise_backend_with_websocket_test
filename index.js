@@ -5,6 +5,7 @@ import users from "./routes/users.js";
 import expenseGroup from "./routes/createExpenseGroup.js"
 import expense from "./routes/createExpenseInfo.js"
 import notification from "./routes/notification.js"
+import acknowledge from "./routes/acknowlegdeMessage.js"
 import cookieParser from "cookie-parser";
 import cors from "cors"
 import { Server } from "socket.io";
@@ -25,7 +26,7 @@ const app = express();
 const server = http.createServer(app); // Create HTTP server
 const io = new Server(server, {
   cors: {
-    origin: "https://kartwise-app-api-integration.onrender.com", // React app URL
+    origin: process.env.URL, // React app URL
     credentials: true, // Allow cookies to be sent
   },
 });
@@ -48,7 +49,7 @@ server.listen(8800, () => {
 
   io.on("connection", (socket) => {
     console.log("A user connected");
-  
+
     socket.emit("expenseUpdated","recahed")
   
     socket.on("disconnect", () => {
@@ -59,7 +60,7 @@ server.listen(8800, () => {
   export { io };
 
 app.use(cors({
-    origin: 'https://kartwise-app-api-integration.onrender.com', // Your React app URL
+    origin: process.env.URL, // Your React app URL
     credentials: true, // Allow cookies to be sent
   }));
   
@@ -70,7 +71,7 @@ app.use("/user",users)
 app.use("/ExpenseGroup",expenseGroup)
 app.use("/expense",expense)
 app.use("/notification",notification)
-
+app.use("/acknowledge",acknowledge)
 
 app.use((err,req,res,next)=>{
 

@@ -30,7 +30,7 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
 
         req.body.users = req.body.users.filter((i)=>i.expense>0 || i.owner == true);
 
-        if(req.body.users.length == 0) return next(createError(401,"Please add expense"))
+        if(req.body.users.length <= 1) return next(createError(401,"Please add expense"))
         
         req.body.users = req.body.users.filter(i=>expensegroup.members.includes(i.id))
         console.log("final")
