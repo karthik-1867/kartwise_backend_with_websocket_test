@@ -43,13 +43,13 @@ const io = new Server(server, {
 
 
 server.listen(8800, () => {
-    console.log("Server running on http://localhost:8800");
+    console.log(`Server running on ${process.env.URL}`);
     connect();
   });
 
   io.on("connection", (socket) => {
     console.log("A user connected");
-
+    console.log(process.env.URL)  
     socket.emit("expenseUpdated","recahed")
   
     socket.on("disconnect", () => {
