@@ -24,6 +24,14 @@ const NotificationSchema = new mongoose.Schema({
     senderId:{
         type:String,
         default:""
+    },
+    senderName:{
+        type:String,
+        default:""
+    },
+    image:{
+        type:String,
+        default:""
     }
 },{timestamps:true})
 

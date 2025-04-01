@@ -53,6 +53,15 @@ export const signin = async(req,res,next) => {
     }
 }
 
+export const signout = async(req,res,next) => {
+    try{
+       res.clearCookie("access_token", { httpOnly: true, secure: true, sameSite: "Strict" });
+       return res.status(200).json({ message: "Logged out successfully" });
+    }catch(e){
+        res.status(404).json(e.message)
+    }
+}
+
 export const checkRoute = async(req,res,next) => {
     res.status(200).json("ok")
 }

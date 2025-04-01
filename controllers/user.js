@@ -23,7 +23,8 @@ export const inviteRequest = async(req,res,next)=>{
            
            const getUser = await Users.findById(req.user.id)
 
-           const notification = new Notification({"type":"Invite","message":`${getUser.name} has sent u request`,"senderId":req.user.id})
+
+           const notification = new Notification({"type":"Invite","message":`${getUser.name} has sent u request`,"senderId":req.user.id,"senderName":getUser.name,"image":getUser.profilePicture})
 
            await notification.save()
 
@@ -53,17 +54,18 @@ export const acceptInvite = async(req,res,next) => {
 
         try{
 
+
             user.inviteAcceptedUsers.push(req.params.id);
             user.inviteRequest.pull(req.params.id);
             user.PendingInviteRequest.pull(req.params.id);
-
+            
             console.log("before save")
             console.log(user);
             await user.save();
 
             console.log("after notification",user)
 
-            const notification = new Notification({"type":"Message","message":`${user.name} accepted your request`,"senderId":req.user.id})
+            const notification = new Notification({"type":"Message","message":`${user.name} accepted your request`,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
 
             await notification.save()
             const receiver = await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteAcceptedUsers:req.user.id},$push:{Notifications:notification.id},$pull:{PendingInviteRequest:req.user.id}})
@@ -96,11 +98,12 @@ export const removeInvite = async(req,res,next) => {
     try{
         if(user.inviteAcceptedUsers.includes(req.params.id)){
           
-            const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id})
+            const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
 
             await notification.save()
             await Users.findByIdAndUpdate(req.params.id,{$pull:{inviteAcceptedUsers:req.user.id},$push:{Notifications:notification.id}})
             user.inviteAcceptedUsers.pull(req.params.id);
+            
             user.save()
             io.emit("expenseUpdated", "created");
             res.status(200).json("removed user")
@@ -119,7 +122,8 @@ export const removeInviteRequest = async(req,res,next) => {
 
     try{
         const user = await Users.findByIdAndUpdate(req.user.id,{$pull:{inviteRequest:req.params.id}},{new:true});
-        const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id})
+        const notification = new Notification({"type":"Message","message":`${user.name} rejected your request`,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
+
         await notification.save()
        await Users.findByIdAndUpdate(req.params.id,{$push:{Notifications:notification.id},$pull:{PendingInviteRequest:req.user.id}})
        io.emit("expenseUpdated", "created"); 

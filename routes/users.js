@@ -1,6 +1,6 @@
 import express from "express"
 import { acceptInvite, getAllUser, inviteRequest, rejectPendingInvite, removeInvite, removeInviteRequest, searchUsers } from "../controllers/user.js";
-import { signin, signup,checkRoute } from "../controllers/auth.js";
+import { signin, signup,checkRoute, signout } from "../controllers/auth.js";
 import { verifyToken } from "../verifiyToken.js";
 import Users from "../models/Users.js";
 
@@ -9,6 +9,8 @@ const router = express.Router();
 router.post("/signup",signup);
 
 router.post("/signin",signin);
+
+router.post("/signout",signout)
 
 router.post("/protectRoute",verifyToken,checkRoute);
 

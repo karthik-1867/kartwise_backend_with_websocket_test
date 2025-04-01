@@ -6,7 +6,7 @@ import { createError } from "../error.js";
 const router = express.Router();
 import Notification from "../models/Notification.js";
 
-router.post("/createGroup",verifyToken,async(req,res,next)=>{
+router.post("/createGroup",verifyToken,async(req,res)=>{
     
     try{
         const users = await Users.findById(req.user.id)
@@ -20,7 +20,7 @@ router.post("/createGroup",verifyToken,async(req,res,next)=>{
 
         const user = await Users.findById(req.user.id);
 
-         const notification = new Notification({"type":"Message","message":`${user.name} has created group ${req.body.title}`,"senderId":req.user.id})
+         const notification = new Notification({"type":"Message","message":`${user.name} has created group ${req.body.title}`,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
         
         await notification.save()
         const result = await Users.updateMany(
@@ -28,11 +28,11 @@ router.post("/createGroup",verifyToken,async(req,res,next)=>{
             { $push: {createExpenseGroup:group.id,Notifications:notification.id},} // Apply the update
           )
 
-        
-          res.status(200).json("ok");
+
+        console.log("final result")
+          res.status(200).json(result);
     }catch(e){
-        if(e.message.includes("duplicate key error")) next(createError(403,"This Group already exist"))
-        next(createError(401,"something went wrong"))
+        res.status(401).json(e.message);
     }
    
 })
@@ -66,7 +66,7 @@ router.post("/updateExpenseGroup/:id",verifyToken,async(req,res,next)=>{
             }
             if(initial_val != update[key]){
                 let user = await Users.findById(req.user.id);
-                let notification = new Notification({"type":"Message","message":`${user.name} has updated ${key} `,"senderId":req.user.id})
+                let notification = new Notification({"type":"Message","message":`${user.name} has updated ${key} `,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
                  await notification.save()
                 await Users.updateMany(
                 { _id: { $in: [...update.members] } }, // Match users with the given userIds
@@ -99,7 +99,7 @@ router.post("/addOrDeleteMembers/:id",verifyToken,async(req,res,next)=>{
             if(!currentExpenseGroup.members.includes(req.body.member) && user.inviteAcceptedUsers.includes(req.body.member)){
             currentExpenseGroup.members.push(req.body.member)
             const addedMember = await Users.findById(req.body.member);
-            const notification = new Notification({"type":"Message","message":`${user.name} has added member ${addedMember.name} `,"senderId":req.user.id})
+            const notification = new Notification({"type":"Message","message":`${user.name} has added member ${addedMember.name} `,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
              await notification.save()
 
             await currentExpenseGroup.save()
@@ -117,7 +117,7 @@ router.post("/addOrDeleteMembers/:id",verifyToken,async(req,res,next)=>{
                 
 
                 const removedMember = await Users.findById(req.body.member);
-                const notification = new Notification({"type":"Message","message":`${user.name} has removed member ${removedMember.name} `,"senderId":req.user.id})
+                const notification = new Notification({"type":"Message","message":`${user.name} has removed member ${removedMember.name} `,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
                 await notification.save()
                 await currentExpenseGroup.save()
                 await Users.updateMany(
@@ -141,7 +141,7 @@ router.delete("/deleteExpenseGroup/:id",verifyToken,async(req,res,next)=>{
         console.log(groupToBeDeleted)
 
 
-        const notification = new Notification({"type":"Message","message":`${user.name} has deleted group ${groupToBeDeleted.title}`,"senderId":req.user.id})
+        const notification = new Notification({"type":"Message","message":`${user.name} has deleted group ${groupToBeDeleted.title}`,"senderId":req.user.id,"senderName":user.name,"image":user.profilePicture})
        
         await notification.save()
 
@@ -165,6 +165,17 @@ router.delete("/deleteExpenseGroup/:id",verifyToken,async(req,res,next)=>{
         res.status(200).json("deleted")
     }catch(e){
         res.status(401).json(e.message);
+    }
+})
+
+
+router.post("/searchExpenseGroup",verifyToken,async(req,res,next)=>{
+    try{
+       const searchUser = await CreateExpenseFroup.find({ title: { $regex: req.body.search, $options: "i" } })
+       
+       res.status(200).json(searchUser)
+    }catch(e){
+       next(createError(404,e.message))
     }
 })
 
