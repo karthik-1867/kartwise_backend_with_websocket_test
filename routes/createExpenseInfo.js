@@ -14,7 +14,8 @@ const router = express.Router();
 router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
    
     try{
-        console.log(req.body)
+
+
         const expensegroup = await CreateExpenseGroup.findById(req.body.expenseGroupId);
         console.log("expenseGroup")
         console.log(expensegroup)
@@ -22,8 +23,6 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
         
         const ownerDetail = await Users.findOne({name:req.body.owner});
         const userDetail = await Users.findById(req.user.id);
-        console.log(ownerDetail)
-        console.log(userDetail)
         req.body.users = req.body.users.map((i)=>(
             i.id == ownerDetail.id ? {... i, "paidBack": i.expense,"owner":true,"status":"paid"} : {... i, "paidBack":0,"owner":false,"status":"pending"}
         ))
@@ -68,7 +67,7 @@ router.post("/createExpenseDetails",verifyToken,async(req,res,next)=>{
         await Users.findByIdAndUpdate(ownerDetail.id,{
             $inc:{contributed:val,paidBack:0,urShare:ownerPaidBack}
         })
-
+        
         io.emit("expenseUpdated", "created");
         res.status(200).json(result);
     }catch(e){
@@ -85,9 +84,39 @@ router.get("/getExpenseDetails/:id",verifyToken,async(req,res,next)=>{
     try{
 
         const groupDetail = await createExpenseInfo.findById(req.params.id)
+        // console.log("gdghfhfhfrtyrykugtjhguytiuyluih")
         res.status(200).json(groupDetail);
+        
     }catch(e){
         res.status(401).json(e);
+    }
+})
+
+
+router.get("/pendingAmount",verifyToken,async(req,res,next)=>{
+    try{
+       const user = await Users.findById(req.user.id)
+       console.log(user);
+
+       const arr = []
+
+       const expense = await createExpenseInfo.find({_id:{$in:[...user.createExpenseInfo]}});
+
+       for (let i of expense){
+          
+          const filterExpense = i.users.filter((item)=>(item.id==req.user.id && (item.status=='pending' || item.status=='partially paid')))[0];
+          console.log("filter")
+          console.log(filterExpense)
+          if(filterExpense)
+          {
+            arr.push({...filterExpense,owner:i.owner,groupName:i.groupName,groupid:i._id})
+          }
+        }
+       
+
+       res.status(200).json(arr)
+    }catch(e){
+      res.status(404).json(e)
     }
 })
 
@@ -250,8 +279,13 @@ router.post("/updateExpenseDetails/:id",verifyToken,async(req,res,next)=>{
 
 
         await currentInfoStatus.save();
+        try {
+            io.emit("expenseUpdated", currentInfoStatus);
+            console.log("Expense update event emitted.");
+          } catch (error) {
+            console.error("Error emitting expenseUpdated event:", error);
+          }
 
-        io.emit("expenseUpdated", "created");
         res.status(200).json(currentInfoStatus);
     }catch(e){
         res.status(401).json(e.message)
@@ -298,5 +332,14 @@ router.post("/memberDetails",verifyToken,async(req,res,next)=>{
     }
 })
 
+router.post("/searchExpenseInfo",verifyToken,async(req,res,next)=>{
+    try{
+       const searchUser = await createExpenseInfo.find({ groupName: { $regex: req.body.search, $options: "i" } })
+       
+       res.status(200).json(searchUser)
+    }catch(e){
+       next(createError(404,e.message))
+    }
+})
 
 export default router;

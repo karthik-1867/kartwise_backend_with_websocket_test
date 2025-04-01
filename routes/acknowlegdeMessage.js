@@ -5,6 +5,8 @@ const router = express.Router();
 import AcknoledgeMessage from "../models/AcknoledgeMessage.js";
 import Users from "../models/Users.js";
 import mongoose from "mongoose";
+import { io } from "../index.js";
+
 router.post("/createMessage",verifyToken,async(req,res,next)=>{
   
     try{
@@ -17,6 +19,7 @@ router.post("/createMessage",verifyToken,async(req,res,next)=>{
         owner[0].Acknowledge.push(newMessage._id);
         const user = await Users.findByIdAndUpdate(req.user.id,{$push:{AcknowledgeMessageStatus:{onwerid:req.user.id,groupid:req.body.groupid,ackid:newMessage._id}}})
         await owner[0].save()
+        io.emit("expenseUpdated", "created");
         res.status(200).json(newMessage)
     }catch(e){
        res.status(404).json(e.message)
@@ -48,6 +51,7 @@ router.post("/updateAcceptOrRejectMessage/:id",verifyToken,async(req,res,next)=>
         const objectIdToPull = new mongoose.Types.ObjectId(req.params.id);
         const updated = await Users.findByIdAndUpdate(req.user.id,{$pull:{Acknowledge:objectIdToPull}})
         console.log("tyfgi",updated.Acknowledge,req.params.id)
+        io.emit("expenseUpdated", "created");
         res.status(200).json(updated)
     }catch(e){
        res.status(404).json(e.message)

@@ -32,7 +32,9 @@ export const inviteRequest = async(req,res,next)=>{
            await Users.findByIdAndUpdate(req.params.id,{$addToSet:{inviteRequest:req.user.id},$push:{Notifications:notification.id}});
            const currentUpdate = await Users.findByIdAndUpdate(req.user.id,{$addToSet:{PendingInviteRequest:req.params.id}},{new:true});
            io.emit("expenseUpdated", "created");
-           res.status(200).json(currentUpdate);
+           res.status(200).json(notification);
+
+
 
         }catch(e){
             res.status(404).json(e.message);
@@ -129,9 +131,19 @@ export const removeInviteRequest = async(req,res,next) => {
 
 export const getUser = async(req,res,next)=>{
     try{
-        const user = await user.findById(req.param.id)
+        const user = await Users.findById(req.param.id)
         res.status(200).json(user)
     }catch(e){
         next(createError(404,"not found"))
+    }
+}
+
+export const searchUsers = async(req,res,next)=>{
+    try{
+       const searchUser = await Users.find({ name: { $regex: req.body.search, $options: "i" } })
+       
+       res.status(200).json(searchUser)
+    }catch(e){
+       next(createError(404,e.message))
     }
 }

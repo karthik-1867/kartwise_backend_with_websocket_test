@@ -1,6 +1,6 @@
 import express from "express"
-import { acceptInvite, getAllUser, inviteRequest, rejectPendingInvite, removeInvite, removeInviteRequest } from "../controllers/user.js";
-import { signin, signup } from "../controllers/auth.js";
+import { acceptInvite, getAllUser, inviteRequest, rejectPendingInvite, removeInvite, removeInviteRequest, searchUsers } from "../controllers/user.js";
+import { signin, signup,checkRoute } from "../controllers/auth.js";
 import { verifyToken } from "../verifiyToken.js";
 import Users from "../models/Users.js";
 
@@ -10,7 +10,11 @@ router.post("/signup",signup);
 
 router.post("/signin",signin);
 
+router.post("/protectRoute",verifyToken,checkRoute);
+
 router.get("/getAllUser",verifyToken,getAllUser);
+
+router.post("/searchUser",verifyToken,searchUsers)
 
 router.post("/inviteRequest/:id",verifyToken,inviteRequest);
 

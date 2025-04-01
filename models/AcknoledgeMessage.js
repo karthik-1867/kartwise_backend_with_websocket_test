@@ -33,6 +33,10 @@ const AcknowledgeSchema = new mongoose.Schema({
         type:String,
         default:"pending"
      },
+     evidence:{
+      type:String,
+      default:""
+     },
      acknowledgeStatus:{
        type:String,
      }
