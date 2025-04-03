@@ -344,4 +344,17 @@ router.post("/searchExpenseInfo",verifyToken,async(req,res,next)=>{
 })
 
 
+router.post("/urExpenseInfo",verifyToken,async(req,res,next)=>{
+    try{
+       const user = await Users.findById(req.user.id);
+       console.log("user",user.name)
+       const expenseInfo = await createExpenseInfo.find({_id:{$in:[... req.body.id]}})
+        const urOwnedExpense = expenseInfo.filter((i)=>i.owner==user.name).map((i)=>i._id);
+       res.status(200).json(urOwnedExpense)
+    }catch(e){
+    res.status(404).json("error")
+    }
+})
+
+
 export default router;

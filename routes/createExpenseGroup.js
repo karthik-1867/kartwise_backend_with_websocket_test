@@ -179,4 +179,14 @@ router.post("/searchExpenseGroup",verifyToken,async(req,res,next)=>{
     }
 })
 
+router.post("/urOwnedGroup",verifyToken,async(req,res,next)=>{
+    try{
+      const groups = await CreateExpenseFroup.find({_id:{$in:[...req.body.id]}})
+      const ids = groups.filter((i)=>i.groupOwner==req.user.id).map((i)=>i._id);
+      res.status(200).json(ids);
+    }catch(e){
+        next(createError(404,e.message));
+    }
+})
+
 export default router;
